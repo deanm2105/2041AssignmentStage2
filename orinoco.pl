@@ -4,6 +4,7 @@
 # By Dean McGregor
 
 sub loadValuesToHashTable($);
+sub showDetailsISBN(%$);
 
 #initalisation stuff, making and loading files
 #and writing into hash tables
@@ -55,9 +56,20 @@ sub loadValuesToHashTable($) {
 	return %hash;
 }
 
+sub showDetailsISBN(%$) {
+	my $bookRef = shift;
+	my %book = %$bookRef;
+	my $isbn = shift;
+	printf ("%s %7s %40s\n", $isbn, $book{price}, $book{title});
+	print "$book{ProductDescription}\n";
+}
+
 #flag for exiting
 $exit = 0;
+#main loop to get commands
+print "orinoco.com - ASCII interface\n";
 while (!$exit) {
+	print "> ";
 	$line = <STDIN>;
 	$line =~ s/\n//g;
 	@commands = split(/\s/, $line);
@@ -66,7 +78,11 @@ while (!$exit) {
 		$exit = 1;
 		print "Thanks for shopping at orinoco.com.\n";
 	} elsif ($action =~ m/details/i) {
-		
+		if (exists $books{$commands[1]}) {
+			showDetailsISBN($books{$commands[1]}, $commands[1]);
+		} else {
+			print "$commands[1] does not exist\n";
+		}
 	} elsif ($action =~ m/search/i) {
 		
 	} elsif ($action =~ m/new_account/i) {
@@ -82,7 +98,7 @@ while (!$exit) {
 	} elsif ($action =~ m/orders/i) {
 		
 	} else {
-		print "$action is not a known command\n";
+		printf "Incorrect command: $action.\nPossible commands are:\nlogin <login-name>\nnew_account <login-name>\nsearch <words>\ndetails <isbn>\nadd <isbn>\ndrop <isbn>\nbasket\ncheckout\norders\nquit\n"
 	}
 }
 
