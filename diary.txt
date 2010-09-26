@@ -1,1 +1,6 @@
 Diary
+
+Date	Start	Finish	Task	Details
+22/09	22:00	01:00	coding	Added reading from stdin, quitting and copied reading of json files from stage 1
+23/09	11:00	12:00	coding	basic details function added
+26/09	10:30	10:50	coding	implemented search (just from stage 1)
