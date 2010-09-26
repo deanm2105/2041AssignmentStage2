@@ -9,11 +9,16 @@ sub findData(%@);
 sub printResults(%);
 sub getSearchTerms(@);
 sub matches(%$@);
+sub makeAccount($);
+sub initProgram();
 
 #initalisation stuff, making and loading files
 #and writing into hash tables
+
+initProgram();
 $bookFile = "books.json";
 %books = loadValuesToHashTable($bookFile);
+$currentUser="";
 
 #flag for exiting
 $exit = 0;
@@ -44,7 +49,7 @@ while (!$exit) {
 		}
 		printResults(findData(\%books, \@searchTerms));
 	} elsif ($action =~ m/new_account/i) {
-		
+		makeAccount($commands[1]);
 	} elsif ($action =~ m/login/i) {
 		
 	} elsif ($action =~ m/add/i) {
@@ -58,6 +63,56 @@ while (!$exit) {
 	} else {
 		printf "Incorrect command: $action.\nPossible commands are:\nlogin <login-name>\nnew_account <login-name>\nsearch <words>\ndetails <isbn>\nadd <isbn>\ndrop <isbn>\nbasket\ncheckout\norders\nquit\n"
 	}
+}
+
+#initalises the current folder
+sub initProgram() {
+	if (!(-d "./orders")) {
+		print "Creating ./orders\n";
+		mkdir "./orders";
+	} 
+	if (!(-d "./baskets")) {
+		print "Creating ./baskets\n";
+		mkdir "./baskets";
+	} 
+	if (!(-d "./users")) {
+		print "Creating ./users\n";
+		mkdir "./users";
+	} 
+}
+
+sub makeAccount($) {
+	$userName = shift;
+	if (!(-d "./users/$userName")) {
+		open (ACCOUNT, "+>./users/$userName") or die "Cannot create new file for user $userName\n";
+		print "Password: ";
+		$line = <STDIN>;
+		print ACCOUNT "password=$line";
+		print "Full Name: ";
+		$line = <STDIN>;
+		print ACCOUNT "name=$line";
+		print "Street: ";
+		$line = <STDIN>;
+		print ACCOUNT "street=$line";
+		print "City/Suburb: ";
+		$line = <STDIN>;
+		print ACCOUNT "city=$line";
+		print "State: ";
+		$line = <STDIN>;
+		print ACCOUNT "state=$line";
+		print "Postcode: ";
+		$line = <STDIN>;
+		print ACCOUNT "postcode=$line";
+		print "Email: ";
+		$line = <STDIN>;
+		print ACCOUNT "email=$line";
+		close(ACCOUNT);
+		$currentUser = $userName;
+		print "Welcome to Orinoco, $userName\n";
+	} else {
+		print "$userName is taken\n";
+	}
+	
 }
 
 #function preforms a search based on keywords given
