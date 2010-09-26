@@ -11,6 +11,8 @@ sub getSearchTerms(@);
 sub matches(%$@);
 sub makeAccount($);
 sub initProgram();
+sub login($);
+sub verifyPassword($$);
 
 #initalisation stuff, making and loading files
 #and writing into hash tables
@@ -51,7 +53,7 @@ while (!$exit) {
 	} elsif ($action =~ m/new_account/i) {
 		makeAccount($commands[1]);
 	} elsif ($action =~ m/login/i) {
-		
+		login($commands[1]);
 	} elsif ($action =~ m/add/i) {
 		
 	} elsif ($action =~ m/drop/i) {
@@ -81,9 +83,42 @@ sub initProgram() {
 	} 
 }
 
+#logs in a user
+sub login($) {
+	my $userName = shift;
+	if (-e "./users/$userName") {
+		print "Password: ";
+		$line = <STDIN>;
+		chomp $line;
+		if (verifyPassword($userName, $line)) {
+			print "Welcome to orinoco.com, $userName.\n";
+		} else {
+			print "The password doesn't match\n";
+		}
+	} else {
+		print "User '$userName' does not exist.\n";
+	}
+}
+
+#checks if a given string matches a password or not
+sub verifyPassword($$) {
+	my $userName = shift;
+	my $password = shift;
+	open (USER, "./users/$userName") or die "Cannot open user file $userName\n";
+	chomp ($line = <USER>);
+	$line =~ s/password=//;
+	close(USER);
+	if ($line eq $password) {
+		return 1;
+	} else {
+		return 0;
+	}
+}
+
+#sub to make a new account file in the /users folder
 sub makeAccount($) {
-	$userName = shift;
-	if (!(-d "./users/$userName")) {
+	my $userName = shift;
+	if (!(-e "./users/$userName")) {
 		open (ACCOUNT, "+>./users/$userName") or die "Cannot create new file for user $userName\n";
 		print "Password: ";
 		$line = <STDIN>;
