@@ -7,6 +7,7 @@ Date	Start	Finish	Task	Details
 26/09	11:00	11:40	coding	implemented new account
 27/09	00:00	00:20	coding	implemented login
 29/09	14:00	14:30	coding	implemented add and drop from basket
+29/09	21:00	21:30	coding	implemented reading/writing for basket files
 
 Plan for tonight:
 Implemented checkout and order functions

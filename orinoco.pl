@@ -15,6 +15,8 @@ sub login($);
 sub verifyPassword($$);
 sub addToBasket($);
 sub dropFromBasekt($);
+sub printShortBookDetails(%);
+sub quitProgram();
 
 #initalisation stuff, making and loading files
 #and writing into hash tables
@@ -37,6 +39,7 @@ while (!$exit) {
 	$action = $commands[0];
 	if ($action =~ m/quit/i) {
 		$exit = 1;
+		quitProgram();
 		print "Thanks for shopping at orinoco.com.\n";
 	} elsif ($action =~ m/details/i) {
 		if (exists $books{$commands[1]}) {
@@ -88,6 +91,19 @@ sub initProgram() {
 	} 
 }
 
+#write the necessary files and quit the program
+sub quitProgram() {
+	if ((scalar @basket == 0) && (-e "./baskets/$currentUser")) {
+		unlink "./baskets/$currentUser";
+	} elsif (scalar @basket > 0) {
+		open (BASKET, "+>./baskets/$currentUser");
+		foreach $isbn (@basket) {
+			print BASKET "$isbn\n";
+		}
+		close(BASKET);
+	}
+}
+
 #add a book to the basket
 sub addToBasket($) {
 	my $isbn = shift;
@@ -126,6 +142,14 @@ sub login($) {
 		chomp $line;
 		if (verifyPassword($userName, $line)) {
 			$currentUser = $userName;
+			if (-e "./baskets/$userName") {
+				@basket = ();
+				open (BASKET, "./baskets/$userName");
+				foreach $line (<BASKET>) {
+					push @basket, $line;
+				}
+				close(BASKET);
+			}
 			print "Welcome to orinoco.com, $userName.\n";
 		} else {
 			print "The password doesn't match\n";
@@ -331,9 +355,16 @@ sub printResults(%) {
 		print "No books matched.\n";
 	} else {
 		foreach $isbn (sort myHashSort keys %data) {
-			printf ("%s %7s %s - %s\n", $isbn, $data{$isbn}{price}, $data{$isbn}{title}, $data{$isbn}{authors});	
+			printShortBookDetails(\$data{$isbn});
+			#printf ("%s %7s %s - %s\n", $isbn, $data{$isbn}{price}, $data{$isbn}{title}, $data{$isbn}{authors});	
 		}
 	}
+}
+
+sub printShortBookDetails(%) {
+	my $bookRef = shift;
+	my %book = %$bookRef;
+	printf ("%s %7s %s - %s\n", $book{isbn}, $book{price}, $book{title}, $book{authors});
 }
 
 #definition of sort for results
