@@ -18,6 +18,7 @@ sub dropFromBasket($);
 sub printShortBookDetails(%);
 sub quitProgram();
 sub showBasket();
+sub checkout();
 
 #initalisation stuff, making and loading files
 #and writing into hash tables
@@ -68,7 +69,7 @@ while (!$exit) {
 	} elsif ($action =~ m/basket/i) {
 		showBasket();
 	} elsif ($action =~ m/checkout/i) {
-		
+		checkout();
 	} elsif ($action =~ m/orders/i) {
 		
 	} else {
@@ -81,6 +82,10 @@ sub initProgram() {
 	if (!(-d "./orders")) {
 		print "Creating ./orders\n";
 		mkdir "./orders";
+		#create the file to store the next order number
+		open (NEXTNUM, ">./orders/NEXT_ORDER_NUMBER");
+		print NEXTNUM "0";
+		close (NEXTNUM);
 	} 
 	if (!(-d "./baskets")) {
 		print "Creating ./baskets\n";
@@ -90,6 +95,7 @@ sub initProgram() {
 		print "Creating ./users\n";
 		mkdir "./users";
 	} 
+
 }
 
 #write the necessary files and quit the program
@@ -98,7 +104,6 @@ sub quitProgram() {
 	$emptyBasket = 0;
 	foreach $isbn (@basket) {
 		if ($isbn eq "") {
-			print "!!!!";
 			$emptyBasket = 1;
 		}
 	}
@@ -115,6 +120,39 @@ sub quitProgram() {
 	}
 }
 
+#takes basket and turns it into an order
+sub checkout() {
+	print "Credit Card Number: ";
+	$cardNo = <STDIN>;
+	print "Expiry date (mm/yy): ";
+	$expiry = <STDIN>;
+	#get the next order number
+	open (NUM, "./orders/NEXT_ORDER_NUMBER") or die "Cannot open the next order number";
+	$orderNum = <NUM>;
+	chomp $orderNum;
+	close(NUM);
+	#create a new file for the order
+	open (ORDER_FILE, ">./orders/$orderNum") or die "Cannot create new file $orderNum";
+	print ORDER_FILE "order_time=" . time() . "\n";
+	print ORDER_FILE "credit_card_number=$cardNo\n";
+	print ORDER_FILE "expiry_date=$expiry\n";
+	foreach $isbn (@basket) {
+		if ($isbn ne "") {
+			print BASKET "$isbn\n";
+		}
+	}
+	close(ORDER_FILE);
+	#add the order to the user's record
+	open (USER, ">>./orders/$currentUser") or die "Cannot open $currentUser order records";
+	print USER "$orderNum\n";
+	close (USER);
+	$orderNum++;
+	#update the next order number
+	open (NUM, ">./orders/NEXT_ORDER_NUMBER") or die "Cannot open the next order number";
+	print NUM "$orderNum\n";
+	close(NUM);
+}
+
 #add a book to the basket
 sub addToBasket($) {
 	my $isbn = shift;
@@ -127,7 +165,6 @@ sub addToBasket($) {
 			print "No such book with ISBN $isbn\n";
 		}
 	}
-	print @basket . "\n";
 }
 
 #remove an isbn from the basket
