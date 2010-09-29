@@ -13,6 +13,8 @@ sub makeAccount($);
 sub initProgram();
 sub login($);
 sub verifyPassword($$);
+sub addToBasket($);
+sub dropFromBasekt($);
 
 #initalisation stuff, making and loading files
 #and writing into hash tables
@@ -21,6 +23,7 @@ initProgram();
 $bookFile = "books.json";
 %books = loadValuesToHashTable($bookFile);
 $currentUser="";
+@basket = ();
 
 #flag for exiting
 $exit = 0;
@@ -55,8 +58,10 @@ while (!$exit) {
 	} elsif ($action =~ m/login/i) {
 		login($commands[1]);
 	} elsif ($action =~ m/add/i) {
-		
+		addToBasket($commands[1]);
 	} elsif ($action =~ m/drop/i) {
+		dropFromBasket($commands[1]);
+	} elsif ($action =~ m/basket/i) {
 		
 	} elsif ($action =~ m/checkout/i) {
 		
@@ -83,6 +88,35 @@ sub initProgram() {
 	} 
 }
 
+#add a book to the basket
+sub addToBasket($) {
+	my $isbn = shift;
+	if ($currentUser eq "") {
+		print "Not logged in.\n";
+	} else {
+		if (exists $books{$isbn}) {
+			push @basket, $isbn;
+		} else {
+			print "No such book with ISBN $isbn\n";
+		}
+	}
+}
+
+#remove an isbn from the basket
+sub dropFromBasekt($) {
+	my $isbn = shift;
+	if ($currentUser eq "") {
+		print "Not logged in.\n";
+	} else {
+		my $numArray = scalar @basket;
+		foreach $num (0..$numArray) {
+			if ($basket[$num] eq $isbn) {
+				$basket[$num] = "";
+			}
+		}
+	}
+}
+
 #logs in a user
 sub login($) {
 	my $userName = shift;
@@ -91,6 +125,7 @@ sub login($) {
 		$line = <STDIN>;
 		chomp $line;
 		if (verifyPassword($userName, $line)) {
+			$currentUser = $userName;
 			print "Welcome to orinoco.com, $userName.\n";
 		} else {
 			print "The password doesn't match\n";
