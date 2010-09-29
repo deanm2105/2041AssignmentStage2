@@ -14,9 +14,10 @@ sub initProgram();
 sub login($);
 sub verifyPassword($$);
 sub addToBasket($);
-sub dropFromBasekt($);
+sub dropFromBasket($);
 sub printShortBookDetails(%);
 sub quitProgram();
+sub showBasket();
 
 #initalisation stuff, making and loading files
 #and writing into hash tables
@@ -65,7 +66,7 @@ while (!$exit) {
 	} elsif ($action =~ m/drop/i) {
 		dropFromBasket($commands[1]);
 	} elsif ($action =~ m/basket/i) {
-		
+		showBasket();
 	} elsif ($action =~ m/checkout/i) {
 		
 	} elsif ($action =~ m/orders/i) {
@@ -93,10 +94,20 @@ sub initProgram() {
 
 #write the necessary files and quit the program
 sub quitProgram() {
-	if ((scalar @basket == 0) && (-e "./baskets/$currentUser")) {
+	#check if basket is empty
+	$emptyBasket = 0;
+	foreach $isbn (@basket) {
+		if ($isbn eq "") {
+			print "!!!!";
+			$emptyBasket = 1;
+		}
+	}
+	#remove file if there's an empty basket
+	if (($emptyBasket) && (-e "./baskets/$currentUser")) {
 		unlink "./baskets/$currentUser";
 	} elsif (scalar @basket > 0) {
-		open (BASKET, "+>./baskets/$currentUser");
+		open (BASKET, ">./baskets/$currentUser");
+		seek BASKET,0,0;
 		foreach $isbn (@basket) {
 			print BASKET "$isbn\n";
 		}
@@ -116,21 +127,34 @@ sub addToBasket($) {
 			print "No such book with ISBN $isbn\n";
 		}
 	}
+	print @basket . "\n";
 }
 
 #remove an isbn from the basket
-sub dropFromBasekt($) {
+sub dropFromBasket($) {
 	my $isbn = shift;
+	chomp $isbn;
 	if ($currentUser eq "") {
 		print "Not logged in.\n";
 	} else {
 		my $numArray = scalar @basket;
-		foreach $num (0..$numArray) {
+		for ($num=0; $num < $numArray; $num++) {
 			if ($basket[$num] eq $isbn) {
 				$basket[$num] = "";
 			}
 		}
 	}
+}
+
+sub showBasket() {
+	$totalCost = 0;
+	foreach $isbn (@basket) {
+		printShortBookDetails($books{$isbn});
+		$books{$isbn}{price} =~ /\$(.*)/;
+		$tempNum = $1;
+		$totalCost += $tempNum;
+	}
+	print "Total: $totalCost\n";
 }
 
 #logs in a user
@@ -146,6 +170,7 @@ sub login($) {
 				@basket = ();
 				open (BASKET, "./baskets/$userName");
 				foreach $line (<BASKET>) {
+					chomp $line;
 					push @basket, $line;
 				}
 				close(BASKET);
@@ -355,7 +380,7 @@ sub printResults(%) {
 		print "No books matched.\n";
 	} else {
 		foreach $isbn (sort myHashSort keys %data) {
-			printShortBookDetails(\$data{$isbn});
+			printShortBookDetails($data{$isbn});
 			#printf ("%s %7s %s - %s\n", $isbn, $data{$isbn}{price}, $data{$isbn}{title}, $data{$isbn}{authors});	
 		}
 	}

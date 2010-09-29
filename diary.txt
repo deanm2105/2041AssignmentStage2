@@ -1,13 +1,14 @@
 Diary
 
-Date	Start	Finish	Task	Details
-22/09	22:00	01:00	coding	Added reading from stdin, quitting and copied reading of json files from stage 1
-23/09	11:00	12:00	coding	basic details function added
-26/09	10:30	10:50	coding	implemented search (just from stage 1)
-26/09	11:00	11:40	coding	implemented new account
-27/09	00:00	00:20	coding	implemented login
-29/09	14:00	14:30	coding	implemented add and drop from basket
-29/09	21:00	21:30	coding	implemented reading/writing for basket files
+Date	Start	Finish	Task		Details
+22/09	22:00	01:00	coding		Added reading from stdin, quitting and copied reading of json files from stage 1
+23/09	11:00	12:00	coding		basic details function added
+26/09	10:30	10:50	coding		implemented search (just from stage 1)
+26/09	11:00	11:40	coding		implemented new account
+27/09	00:00	00:20	coding		implemented login
+29/09	14:00	14:30	coding		implemented add and drop from basket
+29/09	21:00	21:30	coding		implemented reading/writing for basket files
+29/09	22:30	00:00	debugging	fixed up some issues with adding/dropping and viewing the basket
 
 Plan for tonight:
 Implemented checkout and order functions
