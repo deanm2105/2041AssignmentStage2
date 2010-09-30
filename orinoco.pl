@@ -102,9 +102,13 @@ sub initProgram() {
 sub quitProgram() {
 	#check if basket is empty
 	$emptyBasket = 0;
-	foreach $isbn (@basket) {
-		if ($isbn eq "") {
-			$emptyBasket = 1;
+	if (scalar @basket == 0) {
+		$emptyBasket = 1;
+	} else {
+		foreach $isbn (@basket) {
+			if ($isbn eq "") {
+				$emptyBasket = 1;
+			}
 		}
 	}
 	#remove file if there's an empty basket
@@ -120,17 +124,41 @@ sub quitProgram() {
 	}
 }
 
+sub viewOrders() {
+	if ($currentUser ne "") {
+		if (!(-e "./orders/$currentUser")) {
+			print "No orders for user $currentUser\n";
+		} else {
+			open (ORDERS, "./orders/$currentUser") or die ("Cannot open orders file for $currentUser");
+			foreach $number (<ORDERS>) {
+				chomp $number;
+				printOrderDetails($number);
+				close (CURRENT_ORDER);
+			}
+			close (ORDERS);
+		}
+	} else {
+		print "Not logged in.\n";
+	}
+}
+
 #takes basket and turns it into an order
 sub checkout() {
 	print "Credit Card Number: ";
 	$cardNo = <STDIN>;
+	chomp $cardNo;
 	print "Expiry date (mm/yy): ";
 	$expiry = <STDIN>;
+	chomp $expiry;
 	#get the next order number
-	open (NUM, "./orders/NEXT_ORDER_NUMBER") or die "Cannot open the next order number";
-	$orderNum = <NUM>;
-	chomp $orderNum;
-	close(NUM);
+	if (-e "./orders/NEXT_ORDER_NUMBER") {
+		open (NUM, "./orders/NEXT_ORDER_NUMBER") or die "Cannot open the next order number";
+		$orderNum = <NUM>;
+		chomp $orderNum;
+		close(NUM);
+	} else {
+		$orderNum = 0;
+	}
 	#create a new file for the order
 	open (ORDER_FILE, ">./orders/$orderNum") or die "Cannot create new file $orderNum";
 	print ORDER_FILE "order_time=" . time() . "\n";
@@ -138,7 +166,7 @@ sub checkout() {
 	print ORDER_FILE "expiry_date=$expiry\n";
 	foreach $isbn (@basket) {
 		if ($isbn ne "") {
-			print BASKET "$isbn\n";
+			print ORDER_FILE "$isbn\n";
 		}
 	}
 	close(ORDER_FILE);
@@ -151,6 +179,7 @@ sub checkout() {
 	open (NUM, ">./orders/NEXT_ORDER_NUMBER") or die "Cannot open the next order number";
 	print NUM "$orderNum\n";
 	close(NUM);
+	@basket = ();
 }
 
 #add a book to the basket
