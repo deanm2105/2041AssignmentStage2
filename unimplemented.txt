@@ -1,9 +1,7 @@
 Stage 2 Unimplemented Little features:
 
 ---accounts (new/login)---
- * password MUST be 5 char min
- * invalid login: must contain only letters and numbers (check username or similar)
- * login must be 3 - 8 characters long
+ * keep prompting until user enters info for new account (name, address etc.)
  
 ---basket---
  * empty shopping basket print
@@ -19,7 +17,6 @@ Stage 2 Unimplemented Little features:
  * no orders just prints new line
 
 ---general---
- * isbn must be exactly 10 digits (numbers or capital X)
  * match reference implementation strings
 
 

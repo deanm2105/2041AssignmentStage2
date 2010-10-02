@@ -22,6 +22,13 @@ sub checkout();
 sub printOrderDetails($);
 sub viewOrders();
 
+#validator functions for input data
+sub checkValidPassword($);
+sub checkValidUsername($);
+sub checkValidISBN($);
+sub validateCreditCard($);
+sub checkExpiry($);
+
 #initalisation stuff, making and loading files
 #and writing into hash tables
 
@@ -61,13 +68,21 @@ while (!$exit) {
 		}
 		printResults(findData(\%books, \@searchTerms));
 	} elsif ($action =~ m/new_account/i) {
-		makeAccount($commands[1]);
+		if (checkValidUsername($commands[1])) {
+			makeAccount($commands[1]);
+		}
 	} elsif ($action =~ m/login/i) {
-		login($commands[1]);
+		if (checkValidUsername($commands[1])) {
+			login($commands[1]);
+		}
 	} elsif ($action =~ m/add/i) {
-		addToBasket($commands[1]);
+		if (checkValidISBN($commands[1])) {
+			addToBasket($commands[1]);
+		}
 	} elsif ($action =~ m/drop/i) {
-		dropFromBasket($commands[1]);
+		if (checkValidISBN($commands[1])) {
+			dropFromBasket($commands[1]);
+		}
 	} elsif ($action =~ m/basket/i) {
 		showBasket();
 	} elsif ($action =~ m/checkout/i) {
@@ -172,10 +187,14 @@ sub printOrderDetails($) {
 #takes basket and turns it into an order
 sub checkout() {
 	print "Credit Card Number: ";
-	$cardNo = <STDIN>;
+	while (!validateCreditCard($cardNo = <STDIN>)) {
+		print "\nCredit Card Number: ";	
+	}
 	chomp $cardNo;
 	print "Expiry date (mm/yy): ";
-	$expiry = <STDIN>;
+	while (!checkExpiry($expiry = <STDIN>)) {
+		print "\nExpiry date (mm/yy): ";
+	}
 	chomp $expiry;
 	#get the next order number
 	if (-e "./orders/NEXT_ORDER_NUMBER") {
@@ -298,7 +317,9 @@ sub makeAccount($) {
 	if (!(-e "./users/$userName")) {
 		open (ACCOUNT, "+>./users/$userName") or die "Cannot create new file for user $userName\n";
 		print "Password: ";
-		$line = <STDIN>;
+		while (!checkValidPassword($line = <STDIN>)) {
+			print "Password: ";
+		}
 		print ACCOUNT "password=$line";
 		print "Full Name: ";
 		$line = <STDIN>;
@@ -507,5 +528,74 @@ sub myHashSort {
 	}
 }
 
+#check the length of the password
+sub checkValidPassword($) {
+	my $password = shift;
+	if (length($password) <= 5) {
+		print "Invalid password: passwords must contain at least 5 characters.\n";
+		return 0;
+	} else {
+		return 1;
+	}
+}
+
+#check if username is between 3 - 5 characters
+#also check it contains only letters and numbers
+sub checkValidUsername($) {
+	my $username = shift;
+	chomp $username;
+	if ($username =~ m/[^A-Za-z0-9]/) {
+		print "Invalid login '$username': logins must start with a letter and contain only letters and digits.\n";
+		return 0;
+	} elsif (length($username) < 3 || length($username) > 8) {
+		print "Invalid login: logins must be 3-8 characters long.\n";
+		return 0;
+	} else {
+		return 1;
+	}
+}
+
+#checks that an ISBN is a 10 digit string with numbers and X's only
+sub checkValidISBN($) {
+	my $isbn = shift;
+	chomp $isbn;
+	if (length($isbn) == 10) {
+		if ($isbn !~ m/^[0-9X]{10}$/) {
+			print "Invalid isbn '$isbn' : an isbn must be exactly 10 digits.\n";
+			return 0;	
+		}
+	} else {
+		print "Invalid isbn '$isbn' : an isbn must be exactly 10 digits.\n";
+		return 0;
+	}
+	return 1;
+}
+
+#checks a valid credit card number is a string of 16 digits
+sub validateCreditCard($) {
+	my $cardNo = shift;
+	chomp $cardNo;
+	if (length($cardNo) == 16) {
+		if ($cardNo !~ m/[0-9]{16}/) {
+			print "Invalid credit card number - must be 16 digits.\n";
+			return 0;
+		}
+	} else {
+		print "Invalid credit card number - must be 16 digits.\n";
+		return 0;
+	}
+	return 1;
+}
+
+#checks the formatting of the expiry is mm/yy
+sub checkExpiry($) {
+	my $expiry = shift;
+	chomp $expiry;
+	if ($expiry !~ m/[0-9]{2}\/[0-9]{2}/) {
+		print "Invalid expiry date - must be mm/yy, e.g. 11/04.\n";
+		return 0;
+	}
+	return 1;
+}
 
 

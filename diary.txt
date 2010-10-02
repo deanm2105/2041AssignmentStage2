@@ -12,16 +12,5 @@ Date	Start	Finish	Task		Details
 30/09	00:00	00:40	coding		implemented check out
 30/09	23:00	23:40	coding		implemented start of orders
 02/10	14:00	14:30	coding		implemented the remainder of orders
-02/10	15:00	15:40	debugging	played around with reference implementation, found features I'd missed. Organized and put in text file (and added to the git repo)		
-
-password MUST be 5 char min
-checkout show shipping details and basket details
-check credit card len is 16
-check format of expiry
-empty shopping basekt print
-format total in basket
-invalid login: must contain only letters and numbers (check username or similar)
-login must be 3 - 8 characters long
-isbn must be exactly 10 digits (numbers or capital X)
-checkout checks if shopping basket is empty
-no orders just prints new line
+02/10	15:00	15:40	debugging	played around with reference implementation, found features I'd missed. Organized and put in text file (and added to the git repo)
+02/10	16:04	
