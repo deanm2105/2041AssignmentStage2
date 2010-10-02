@@ -21,6 +21,7 @@ sub showBasket();
 sub checkout();
 sub printOrderDetails($);
 sub viewOrders();
+sub showShippingDetails();
 
 #validator functions for input data
 sub checkValidPassword($);
@@ -28,6 +29,7 @@ sub checkValidUsername($);
 sub checkValidISBN($);
 sub validateCreditCard($);
 sub checkExpiry($);
+sub checkEmptyBasket();
 
 #initalisation stuff, making and loading files
 #and writing into hash tables
@@ -131,7 +133,7 @@ sub quitProgram() {
 	#remove file if there's an empty basket
 	if (($emptyBasket) && (-e "./baskets/$currentUser")) {
 		unlink "./baskets/$currentUser";
-	} elsif (scalar @basket > 0) {
+	} elsif (checkEmptyBasket()) {
 		open (BASKET, ">./baskets/$currentUser");
 		seek BASKET,0,0;
 		foreach $isbn (@basket) {
@@ -141,10 +143,33 @@ sub quitProgram() {
 	}
 }
 
+sub showShippingDetails() {
+	open (USER, "./users/$currentUser") or die "Cannot open user file for $currentUser";
+	foreach $line (<USER>) {
+		if ($line =~ m/street=(.*)$/) {
+			$street = $1;
+		} elsif ($line =~ m/city=(.*)$/) {
+			$city = $1;
+		} elsif ($line =~ m/state=(.*)$/) {
+			$state = $1;
+		} elsif ($line =~ m/postcode=(.*)$/) {
+			$postcode = $1;
+		} elsif ($line =~ m/name=(.*)$/) {
+			$name = $1;
+		}
+	}
+	close(USER);
+	print $name;
+	print $street;
+	print $city;
+	chomp $state;
+	print "$state, $postcode";
+}
+
 sub viewOrders() {
 	if ($currentUser ne "") {
 		if (!(-e "./orders/$currentUser")) {
-			print "No orders for user $currentUser\n";
+			print "\n";
 		} else {
 			open (ORDERS, "./orders/$currentUser") or die ("Cannot open orders file for $currentUser");
 			foreach $number (<ORDERS>) {
@@ -186,46 +211,54 @@ sub printOrderDetails($) {
 
 #takes basket and turns it into an order
 sub checkout() {
-	print "Credit Card Number: ";
-	while (!validateCreditCard($cardNo = <STDIN>)) {
-		print "\nCredit Card Number: ";	
-	}
-	chomp $cardNo;
-	print "Expiry date (mm/yy): ";
-	while (!checkExpiry($expiry = <STDIN>)) {
-		print "\nExpiry date (mm/yy): ";
-	}
-	chomp $expiry;
-	#get the next order number
-	if (-e "./orders/NEXT_ORDER_NUMBER") {
-		open (NUM, "./orders/NEXT_ORDER_NUMBER") or die "Cannot open the next order number";
-		$orderNum = <NUM>;
-		chomp $orderNum;
-		close(NUM);
-	} else {
-		$orderNum = 0;
-	}
-	#create a new file for the order
-	open (ORDER_FILE, ">./orders/$orderNum") or die "Cannot create new file $orderNum";
-	print ORDER_FILE "order_time=" . time() . "\n";
-	print ORDER_FILE "credit_card_number=$cardNo\n";
-	print ORDER_FILE "expiry_date=$expiry\n";
-	foreach $isbn (@basket) {
-		if ($isbn ne "") {
-			print ORDER_FILE "$isbn\n";
+	if (checkEmptyBasket()) {
+		showShippingDetails();
+		print "\n";
+		showBasket();
+		print "\n";
+		print "Credit Card Number: ";
+		while (!validateCreditCard($cardNo = <STDIN>)) {
+			print "\nCredit Card Number: ";	
 		}
+		chomp $cardNo;
+		print "Expiry date (mm/yy): ";
+		while (!checkExpiry($expiry = <STDIN>)) {
+			print "\nExpiry date (mm/yy): ";
+		}
+		chomp $expiry;
+		#get the next order number
+		if (-e "./orders/NEXT_ORDER_NUMBER") {
+			open (NUM, "./orders/NEXT_ORDER_NUMBER") or die "Cannot open the next order number";
+			$orderNum = <NUM>;
+			chomp $orderNum;
+			close(NUM);
+		} else {
+			$orderNum = 0;
+		}
+		#create a new file for the order
+		open (ORDER_FILE, ">./orders/$orderNum") or die "Cannot create new file $orderNum";
+		print ORDER_FILE "order_time=" . time() . "\n";
+		print ORDER_FILE "credit_card_number=$cardNo\n";
+		print ORDER_FILE "expiry_date=$expiry\n";
+		foreach $isbn (@basket) {
+			if ($isbn ne "") {
+				print ORDER_FILE "$isbn\n";
+			}
+		}
+		close(ORDER_FILE);
+		#add the order to the user's record
+		open (USER, ">>./orders/$currentUser") or die "Cannot open $currentUser order records";
+		print USER "$orderNum\n";
+		close (USER);
+		$orderNum++;
+		#update the next order number
+		open (NUM, ">./orders/NEXT_ORDER_NUMBER") or die "Cannot open the next order number";
+		print NUM "$orderNum\n";
+		close(NUM);
+		@basket = ();
+	} else {
+		printf "Basket is empty\n";
 	}
-	close(ORDER_FILE);
-	#add the order to the user's record
-	open (USER, ">>./orders/$currentUser") or die "Cannot open $currentUser order records";
-	print USER "$orderNum\n";
-	close (USER);
-	$orderNum++;
-	#update the next order number
-	open (NUM, ">./orders/NEXT_ORDER_NUMBER") or die "Cannot open the next order number";
-	print NUM "$orderNum\n";
-	close(NUM);
-	@basket = ();
 }
 
 #add a book to the basket
@@ -266,7 +299,13 @@ sub showBasket() {
 		$tempNum = $1;
 		$totalCost += $tempNum;
 	}
-	print "Total: $totalCost\n";
+	if (scalar @basket > 0) {
+		$priceString = sprintf("\$%.2f", $totalCost);
+		printf ("%-10s %7s\n", "Total:", $priceString);
+	} else {
+		print "There is nothing in your basket.\n";
+	}
+	
 }
 
 #logs in a user
@@ -593,6 +632,14 @@ sub checkExpiry($) {
 	chomp $expiry;
 	if ($expiry !~ m/[0-9]{2}\/[0-9]{2}/) {
 		print "Invalid expiry date - must be mm/yy, e.g. 11/04.\n";
+		return 0;
+	}
+	return 1;
+}
+
+sub checkEmptyBasket() {
+	if (scalar @basket == 0) {
+		print "Your shopping basket is empty.\n";
 		return 0;
 	}
 	return 1;
