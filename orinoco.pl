@@ -406,8 +406,13 @@ sub showDetailsISBN(%$) {
 	my $bookRef = shift;
 	my %book = %$bookRef;
 	my $isbn = shift;
-	printf ("%s %7s %40s\n", $isbn, $book{price}, $book{title});
-	#need to add details here as per sample program
+	my @dontShow = qw(SmallImageHeight MediumImageHeight LargeImageHeight MediumImageWidth ProductDescription MediumImageUrl ImageUrlMedium ImageUrlSmall authors ImageUrlLarge SmallImageUrl SalesRank LargeImageWidth SmallImageWidth price title LargeImageUrl);
+	printShortBookDetails(\%book);
+	foreach $key (sort keys %book) {
+		if (!(grep {$_ eq $key} @dontShow)) {
+			print "$key: $book{$key}\n";
+		}	
+	}
 	print "$book{ProductDescription}\n";
 }
 

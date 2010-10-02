@@ -1,0 +1,29 @@
+Stage 2 Unimplemented Little features:
+
+---accounts (new/login)---
+ * password MUST be 5 char min
+ * invalid login: must contain only letters and numbers (check username or similar)
+ * login must be 3 - 8 characters long
+ 
+---basket---
+ * empty shopping basket print
+ * format total in basket
+ 
+---checkout---
+ * checkout show shipping details and basket details
+ * check credit card len is 16
+ * check format of expiry
+ * checkout checks if shopping basket is empty
+ 
+---orders---
+ * no orders just prints new line
+
+---general---
+ * isbn must be exactly 10 digits (numbers or capital X)
+ * match reference implementation strings
+
+
+
+
+
+
