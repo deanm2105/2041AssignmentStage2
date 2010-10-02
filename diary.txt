@@ -10,7 +10,8 @@ Date	Start	Finish	Task		Details
 29/09	21:00	21:30	coding		implemented reading/writing for basket files
 29/09	22:30	00:00	debugging	fixed up some issues with adding/dropping and viewing the basket
 30/09	00:00	00:40	coding		implemented check out
-30/09	23:00	32:40	coding		implemented start of orders	
+30/09	23:00	32:40	coding		implemented start of orders
+2/10	14:00		
 
 Maybe basket should be sort of like an ADT on a file instead of an array... what does the reference implentation do?
 Details!!!!!

@@ -19,6 +19,8 @@ sub printShortBookDetails(%);
 sub quitProgram();
 sub showBasket();
 sub checkout();
+sub printOrderDetails($);
+sub viewOrders();
 
 #initalisation stuff, making and loading files
 #and writing into hash tables
@@ -71,7 +73,7 @@ while (!$exit) {
 	} elsif ($action =~ m/checkout/i) {
 		checkout();
 	} elsif ($action =~ m/orders/i) {
-		
+		viewOrders();
 	} else {
 		printf "Incorrect command: $action.\nPossible commands are:\nlogin <login-name>\nnew_account <login-name>\nsearch <words>\ndetails <isbn>\nadd <isbn>\ndrop <isbn>\nbasket\ncheckout\norders\nquit\n"
 	}
@@ -133,13 +135,38 @@ sub viewOrders() {
 			foreach $number (<ORDERS>) {
 				chomp $number;
 				printOrderDetails($number);
-				close (CURRENT_ORDER);
 			}
 			close (ORDERS);
+			print "\n";
 		}
 	} else {
 		print "Not logged in.\n";
 	}
+}
+
+sub printOrderDetails($) {
+	my $number = shift;
+	open (CURRENT_ORDER, "./orders/$number") or die "Cannot open order number $number";
+	$line = <CURRENT_ORDER>;
+	$line =~ /.*=(.*)/;
+	$time = $1;
+	chomp $time;
+	$timeStr = localtime ($time);
+	print "\nOrder #$number - $timeStr\n";
+	$line = <CURRENT_ORDER>;
+	$line =~ /.*=(.*)/;
+	$cardNo = $1;
+	$line = <CURRENT_ORDER>;
+	$line =~ /.*=(.*)/;
+	$expiry = $1;
+	chomp $cardNo;
+	chomp $expiry;
+	print "Credit Card Number: $cardNo (Expiry $expiry)\n";
+	while ($line = <CURRENT_ORDER>) {
+		chomp $line;
+		printShortBookDetails($books{$line});
+	}
+	close (CURRENT_ORDER);
 }
 
 #takes basket and turns it into an order
