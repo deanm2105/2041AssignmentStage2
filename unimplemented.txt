@@ -1,17 +1,14 @@
 Stage 2 Unimplemented Little features:
 
 ---accounts (new/login)---
- * keep prompting until user enters info for new account (name, address etc.)
  
 ---basket---
- * change basket to an ADT for a file
  
 ---checkout---
  
 ---orders---
 
 ---general---
- * match reference implementation strings
  
  
 

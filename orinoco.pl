@@ -29,7 +29,7 @@ sub checkValidUsername($);
 sub checkValidISBN($);
 sub validateCreditCard($);
 sub checkExpiry($);
-sub checkEmptyBasket();
+sub checkEmptyBasket($);
 
 #initalisation stuff, making and loading files
 #and writing into hash tables
@@ -58,7 +58,7 @@ while (!$exit) {
 		if (exists $books{$commands[1]}) {
 			showDetailsISBN($books{$commands[1]}, $commands[1]);
 		} else {
-			print "$commands[1] does not exist\n";
+			print "Unknown isbn: $commands[1].\n";
 		}
 	} elsif ($action =~ m/search/i) {
 		@searchTerms = ();
@@ -133,7 +133,7 @@ sub quitProgram() {
 	#remove file if there's an empty basket
 	if (($emptyBasket) && (-e "./baskets/$currentUser")) {
 		unlink "./baskets/$currentUser";
-	} elsif (checkEmptyBasket()) {
+	} elsif (checkEmptyBasket(1)) {
 		open (BASKET, ">./baskets/$currentUser");
 		seek BASKET,0,0;
 		foreach $isbn (@basket) {
@@ -211,7 +211,7 @@ sub printOrderDetails($) {
 
 #takes basket and turns it into an order
 sub checkout() {
-	if (checkEmptyBasket()) {
+	if (checkEmptyBasket(0)) {
 		showShippingDetails();
 		print "\n";
 		showBasket();
@@ -256,8 +256,6 @@ sub checkout() {
 		print NUM "$orderNum\n";
 		close(NUM);
 		@basket = ();
-	} else {
-		printf "Basket is empty\n";
 	}
 }
 
@@ -270,7 +268,7 @@ sub addToBasket($) {
 		if (exists $books{$isbn}) {
 			push @basket, $isbn;
 		} else {
-			print "No such book with ISBN $isbn\n";
+			print "Unknown isbn: $isbn.\n";
 		}
 	}
 }
@@ -285,7 +283,7 @@ sub dropFromBasket($) {
 		my $numArray = scalar @basket;
 		for ($num=0; $num < $numArray; $num++) {
 			if ($basket[$num] eq $isbn) {
-				$basket[$num] = "";
+				delete $basket[$num];
 			}
 		}
 	}
@@ -299,11 +297,9 @@ sub showBasket() {
 		$tempNum = $1;
 		$totalCost += $tempNum;
 	}
-	if (scalar @basket > 0) {
+	if (checkEmptyBasket(0)) {
 		$priceString = sprintf("\$%.2f", $totalCost);
 		printf ("%-10s %7s\n", "Total:", $priceString);
-	} else {
-		print "There is nothing in your basket.\n";
 	}
 	
 }
@@ -328,7 +324,7 @@ sub login($) {
 			}
 			print "Welcome to orinoco.com, $userName.\n";
 		} else {
-			print "The password doesn't match\n";
+			print "Incorrect password.\n";
 		}
 	} else {
 		print "User '$userName' does not exist.\n";
@@ -386,7 +382,7 @@ sub makeAccount($) {
 		$currentUser = $userName;
 		print "Welcome to Orinoco, $userName\n";
 	} else {
-		print "$userName is taken\n";
+		print "Invalid user name: login already exists.\n";
 	}
 	
 }
@@ -407,7 +403,7 @@ sub findData(%@) {
 		foreach $key (keys %termsByCat) {
 			if (!exists $data{$isbn}{$key} && $key ne "") {
 				print "Unknown keyword\n";
-				exit (1);	
+				$match = 0;	
 			} else {
 				if (!matches($data{$isbn}, $key, $termsByCat{$key})) {
 					$match = 0;
@@ -473,6 +469,7 @@ sub showDetailsISBN(%$) {
 	my @dontShow = qw(SmallImageHeight MediumImageHeight LargeImageHeight MediumImageWidth ProductDescription MediumImageUrl ImageUrlMedium ImageUrlSmall authors ImageUrlLarge SmallImageUrl SalesRank LargeImageWidth SmallImageWidth price title LargeImageUrl);
 	printShortBookDetails(\%book);
 	foreach $key (sort keys %book) {
+		#check if the the key is in the don't show array
 		if (!(grep {$_ eq $key} @dontShow)) {
 			print "$key: $book{$key}\n";
 		}	
@@ -548,6 +545,7 @@ sub printResults(%) {
 	}
 }
 
+#shows single line info about a book
 sub printShortBookDetails(%) {
 	my $bookRef = shift;
 	my %book = %$bookRef;
@@ -641,9 +639,11 @@ sub checkExpiry($) {
 	return 1;
 }
 
-sub checkEmptyBasket() {
+#takes a boolean to supress printing
+sub checkEmptyBasket($) {
+	my $quite = shift;
 	if (scalar @basket == 0) {
-		print "Your shopping basket is empty.\n";
+		print "Your shopping basket is empty.\n" unless $quite;
 		return 0;
 	}
 	return 1;
