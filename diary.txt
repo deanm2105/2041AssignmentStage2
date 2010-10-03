@@ -14,3 +14,4 @@ Date	Start	Finish	Task		Details
 02/10	14:00	14:30	coding		implemented the remainder of orders
 02/10	15:00	15:40	debugging	played around with reference implementation, found features I'd missed. Organized and put in text file (and added to the git repo)
 02/10	16:04	15:30	coding		added validation for credit card details, username and password. fixed printing to match reference implementation
+03/10	16:00	16:15	coding		changed new account to write to account at the end, made more general with arrays and loops.

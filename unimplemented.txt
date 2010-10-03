@@ -2,7 +2,6 @@ Stage 2 Unimplemented Little features:
 
 ---accounts (new/login)---
  * keep prompting until user enters info for new account (name, address etc.)
- * change new accounts to write to the file at the end of the processing, not while it's happening
  
 ---basket---
  * change basket to an ADT for a file

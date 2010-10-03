@@ -353,6 +353,9 @@ sub verifyPassword($$) {
 #sub to make a new account file in the /users folder
 sub makeAccount($) {
 	my $userName = shift;
+	my @fields = ("Full Name", "Street", "City/Suburb", "State", "Postcode", "Email");
+	my @textFields = qw(name street city state postcode email);
+	my @details = ();
 	if (!(-e "./users/$userName")) {
 		open (ACCOUNT, "+>./users/$userName") or die "Cannot create new file for user $userName\n";
 		print "Password: ";
@@ -360,24 +363,25 @@ sub makeAccount($) {
 			print "Password: ";
 		}
 		print ACCOUNT "password=$line";
-		print "Full Name: ";
-		$line = <STDIN>;
-		print ACCOUNT "name=$line";
-		print "Street: ";
-		$line = <STDIN>;
-		print ACCOUNT "street=$line";
-		print "City/Suburb: ";
-		$line = <STDIN>;
-		print ACCOUNT "city=$line";
-		print "State: ";
-		$line = <STDIN>;
-		print ACCOUNT "state=$line";
-		print "Postcode: ";
-		$line = <STDIN>;
-		print ACCOUNT "postcode=$line";
-		print "Email: ";
-		$line = <STDIN>;
-		print ACCOUNT "email=$line";
+		$count = 0;
+		foreach $field (@fields) {
+			print "$field: ";
+			$line = <STDIN>;
+			chomp $line;
+			while ($line eq "") {
+				print "$field: ";
+				$line = <STDIN>;
+				chomp $line;
+			}
+			push @details, $details[$count] = $line . "\n";
+			$count++;
+		}
+		$count = 0;
+		foreach $title (@textFields) {
+			$data = $details[$count];
+			print ACCOUNT "$title=$data";
+			$count++;
+		}
 		close(ACCOUNT);
 		$currentUser = $userName;
 		print "Welcome to Orinoco, $userName\n";
