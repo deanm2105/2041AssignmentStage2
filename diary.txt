@@ -16,3 +16,5 @@ Date	Start	Finish	Task		Details
 02/10	16:04	15:30	coding		added validation for credit card details, username and password. fixed printing to match reference implementation
 03/10	16:00	16:15	coding		changed new account to write to account at the end, made more general with arrays and loops.
 03/10	16:15	16:45	debugging	matched reference implemenation strings
+04/10	12:00	13:30	debugging 	fixed up matching of commands in main menu to match behaviour of the reference implementation
+04/10	14:00	15:30	debugging	matching strings from reference, fixed basket to match reference

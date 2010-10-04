@@ -30,6 +30,7 @@ sub checkValidISBN($);
 sub validateCreditCard($);
 sub checkExpiry($);
 sub checkEmptyBasket($);
+sub checkLoggedIn($);
 
 #initalisation stuff, making and loading files
 #and writing into hash tables
@@ -38,7 +39,6 @@ initProgram();
 $bookFile = "books.json";
 %books = loadValuesToHashTable($bookFile);
 $currentUser="";
-@basket = ();
 
 #flag for exiting
 $exit = 0;
@@ -47,52 +47,51 @@ print "orinoco.com - ASCII interface\n";
 while (!$exit) {
 	print "> ";
 	$line = <STDIN>;
+	$line =~ m/\s*(.*)/;
+	$line = $1;
 	$line =~ s/\n//g;
-	@commands = split(/\s/, $line);
-	$action = $commands[0];
-	if ($action =~ m/quit/i) {
-		$exit = 1;
-		quitProgram();
-		print "Thanks for shopping at orinoco.com.\n";
-	} elsif ($action =~ m/details/i) {
-		if (exists $books{$commands[1]}) {
-			showDetailsISBN($books{$commands[1]}, $commands[1]);
-		} else {
-			print "Unknown isbn: $commands[1].\n";
-		}
-	} elsif ($action =~ m/search/i) {
-		@searchTerms = ();
-		#make an array of search terms
-		foreach $term (@commands) {
-			if ($term ne $action) {
-				push @searchTerms, $term;
+	chomp $line;
+	if ($line) {
+		if ($line =~ m/quit/i) {
+			$exit = 1;
+			quitProgram();
+		} elsif ($line =~ m/^details\s([^\s]*$)/i) {
+			if (checkValidISBN($1)) {
+				if (exists $books{$1}) {
+					showDetailsISBN($books{$1}, $1);
+				} else {
+					print "Unknown isbn: $1.\n";
+				}
 			}
+			
+		} elsif ($line =~ m/search\s(.*)/i) {
+			@searchTerms = split(' ', $1);
+			printResults(findData(\%books, \@searchTerms));
+		} elsif ($line =~ m/new_account\s(.*)/i) {
+			if (checkValidUsername($1)) {
+				makeAccount($1);
+			}
+		} elsif ($line =~ m/^login\s([^\s]*$)/i) {
+			if (checkValidUsername($1)) {
+				login($1);
+			}
+		} elsif ($line =~ m/^add\s([^\s]*$)/i) {
+			if (checkValidISBN($1)) {
+				addToBasket($1);
+			}
+		} elsif ($line =~ m/^drop\s([^\s]*$)/i) {
+			if (checkValidISBN($1)) {
+				dropFromBasket($1);
+			}
+		} elsif ($line =~ m/basket/i) {
+			showBasket();
+		} elsif ($line =~ m/checkout/i) {
+			checkout();
+		} elsif ($line =~ m/orders/i) {
+			viewOrders();
+		} else {
+			print "Incorrect command: $line.\nPossible commands are:\nlogin <login-name>\nnew_account <login-name>\nsearch <words>\ndetails <isbn>\nadd <isbn>\ndrop <isbn>\nbasket\ncheckout\norders\nquit\n";
 		}
-		printResults(findData(\%books, \@searchTerms));
-	} elsif ($action =~ m/new_account/i) {
-		if (checkValidUsername($commands[1])) {
-			makeAccount($commands[1]);
-		}
-	} elsif ($action =~ m/login/i) {
-		if (checkValidUsername($commands[1])) {
-			login($commands[1]);
-		}
-	} elsif ($action =~ m/add/i) {
-		if (checkValidISBN($commands[1])) {
-			addToBasket($commands[1]);
-		}
-	} elsif ($action =~ m/drop/i) {
-		if (checkValidISBN($commands[1])) {
-			dropFromBasket($commands[1]);
-		}
-	} elsif ($action =~ m/basket/i) {
-		showBasket();
-	} elsif ($action =~ m/checkout/i) {
-		checkout();
-	} elsif ($action =~ m/orders/i) {
-		viewOrders();
-	} else {
-		printf "Incorrect command: $action.\nPossible commands are:\nlogin <login-name>\nnew_account <login-name>\nsearch <words>\ndetails <isbn>\nadd <isbn>\ndrop <isbn>\nbasket\ncheckout\norders\nquit\n"
 	}
 }
 
@@ -119,28 +118,7 @@ sub initProgram() {
 
 #write the necessary files and quit the program
 sub quitProgram() {
-	#check if basket is empty
-	$emptyBasket = 0;
-	if (scalar @basket == 0) {
-		$emptyBasket = 1;
-	} else {
-		foreach $isbn (@basket) {
-			if ($isbn eq "") {
-				$emptyBasket = 1;
-			}
-		}
-	}
-	#remove file if there's an empty basket
-	if (($emptyBasket) && (-e "./baskets/$currentUser")) {
-		unlink "./baskets/$currentUser";
-	} elsif (checkEmptyBasket(1)) {
-		open (BASKET, ">./baskets/$currentUser");
-		seek BASKET,0,0;
-		foreach $isbn (@basket) {
-			print BASKET "$isbn\n";
-		}
-		close(BASKET);
-	}
+	print "Thanks for shopping at orinoco.com.\n";
 }
 
 sub showShippingDetails() {
@@ -167,7 +145,7 @@ sub showShippingDetails() {
 }
 
 sub viewOrders() {
-	if ($currentUser ne "") {
+	if (checkLoggedIn(0)) {
 		if (!(-e "./orders/$currentUser")) {
 			print "\n";
 		} else {
@@ -179,8 +157,6 @@ sub viewOrders() {
 			close (ORDERS);
 			print "\n";
 		}
-	} else {
-		print "Not logged in.\n";
 	}
 }
 
@@ -240,11 +216,13 @@ sub checkout() {
 		print ORDER_FILE "order_time=" . time() . "\n";
 		print ORDER_FILE "credit_card_number=$cardNo\n";
 		print ORDER_FILE "expiry_date=$expiry\n";
-		foreach $isbn (@basket) {
+		open (BASKET, "./baskets/$currentUser") or die "Cannot open basket for $currentUser";
+		foreach $isbn (<BASKET>) {
 			if ($isbn ne "") {
 				print ORDER_FILE "$isbn\n";
 			}
 		}
+		close (BASKET);
 		close(ORDER_FILE);
 		#add the order to the user's record
 		open (USER, ">>./orders/$currentUser") or die "Cannot open $currentUser order records";
@@ -255,18 +233,18 @@ sub checkout() {
 		open (NUM, ">./orders/NEXT_ORDER_NUMBER") or die "Cannot open the next order number";
 		print NUM "$orderNum\n";
 		close(NUM);
-		@basket = ();
+		unlink "./baskets/$currentUser";
 	}
 }
 
 #add a book to the basket
 sub addToBasket($) {
 	my $isbn = shift;
-	if ($currentUser eq "") {
-		print "Not logged in.\n";
-	} else {
+	if (checkLoggedIn(0)) {
 		if (exists $books{$isbn}) {
-			push @basket, $isbn;
+			open (BASKET, ">>./baskets/$currentUser") or die "Cannot open basket for $currentUser";
+			print BASKET $isbn . "\n";
+			close (BASKET);
 		} else {
 			print "Unknown isbn: $isbn.\n";
 		}
@@ -277,38 +255,66 @@ sub addToBasket($) {
 sub dropFromBasket($) {
 	my $isbn = shift;
 	chomp $isbn;
-	if ($currentUser eq "") {
-		print "Not logged in.\n";
-	} else {
-		my $numArray = scalar @basket;
-		for ($num=0; $num < $numArray; $num++) {
-			if ($basket[$num] eq $isbn) {
-				delete $basket[$num];
+	if (checkLoggedIn(0)) {
+		if (checkEmptyBasket(1)) {
+			open (BASKET, "./baskets/$currentUser") or die "Cannot open basket for $currentUser";
+			@basket = <BASKET>;
+			seek BASKET,0,0;
+			$found = 0;
+			$num = 0;
+			foreach $line (<BASKET>) {
+				chomp $line;
+				if ($line eq $isbn && !$found) {
+					$basket[$num] = "";
+					$found = 1;
+				}
+				$num++;
 			}
+			close (BASKET);
+			if ($found) {
+				unlink "./baskets/$currentUser";
+				open (BASKET, ">./baskets/$currentUser");
+				foreach $line (@basket) {
+					if ($line ne "") {
+						print BASKET $line
+					}
+				}
+				close (BASKET);	
+			} else {
+				print "Isbn $isbn not in shopping basket.\n";
+			}
+			
+		} else {
+			print "Isbn $isbn not in shopping basket.\n";
 		}
 	}
 }
 
 sub showBasket() {
-	$totalCost = 0;
-	foreach $isbn (@basket) {
-		printShortBookDetails($books{$isbn});
-		$books{$isbn}{price} =~ /\$(.*)/;
-		$tempNum = $1;
-		$totalCost += $tempNum;
+	if (checkLoggedIn(0)) {
+		if (checkEmptyBasket(0)) {
+			$totalCost = 0;
+			open (BASKET, "./baskets/$currentUser") or die "Cannot open basket for user $currentUser";
+			foreach $isbn (<BASKET>) {
+				chomp $isbn;
+				printShortBookDetails($books{$isbn});
+				$books{$isbn}{price} =~ /\$(.*)/;
+				$tempNum = $1;
+				$totalCost += $tempNum;
+			}
+			$priceString = sprintf("\$%.2f", $totalCost);
+			printf ("%-10s %7s\n", "Total:", $priceString);
+			close (BASKET);
+		}
+		
 	}
-	if (checkEmptyBasket(0)) {
-		$priceString = sprintf("\$%.2f", $totalCost);
-		printf ("%-10s %7s\n", "Total:", $priceString);
-	}
-	
 }
 
 #logs in a user
 sub login($) {
 	my $userName = shift;
 	if (-e "./users/$userName") {
-		print "Password: ";
+		print "Enter password: ";
 		$line = <STDIN>;
 		chomp $line;
 		if (verifyPassword($userName, $line)) {
@@ -349,7 +355,7 @@ sub verifyPassword($$) {
 #sub to make a new account file in the /users folder
 sub makeAccount($) {
 	my $userName = shift;
-	my @fields = ("Full Name", "Street", "City/Suburb", "State", "Postcode", "Email");
+	my @fields = ("Full Name", "Street", "City/Suburb", "State", "Postcode", "Email Address");
 	my @textFields = qw(name street city state postcode email);
 	my @details = ();
 	if (!(-e "./users/$userName")) {
@@ -380,7 +386,7 @@ sub makeAccount($) {
 		}
 		close(ACCOUNT);
 		$currentUser = $userName;
-		print "Welcome to Orinoco, $userName\n";
+		print "Welcome to orinoco.com, $userName.\n";
 	} else {
 		print "Invalid user name: login already exists.\n";
 	}
@@ -453,7 +459,8 @@ sub loadValuesToHashTable($) {
 				#pattern match and pull out all data into a hash table
 				$temp = $2;
 				$cat = $1;
-				$temp =~ s/\\//;
+				$temp =~ s/\\//g;
+				$temp =~ s/<[A-Za-z\/]*>//g;
 				$hash{$currentISBN}{$cat} = $temp;
 			}
 		}
@@ -466,7 +473,7 @@ sub showDetailsISBN(%$) {
 	my $bookRef = shift;
 	my %book = %$bookRef;
 	my $isbn = shift;
-	my @dontShow = qw(SmallImageHeight MediumImageHeight LargeImageHeight MediumImageWidth ProductDescription MediumImageUrl ImageUrlMedium ImageUrlSmall authors ImageUrlLarge SmallImageUrl SalesRank LargeImageWidth SmallImageWidth price title LargeImageUrl);
+	my @dontShow = qw(SmallImageHeight MediumImageHeight LargeImageHeight MediumImageWidth ProductDescription MediumImageUrl ImageUrlMedium ImageUrlSmall authors ImageUrlLarge SmallImageUrl LargeImageWidth SmallImageWidth price title LargeImageUrl);
 	printShortBookDetails(\%book);
 	foreach $key (sort keys %book) {
 		#check if the the key is in the don't show array
@@ -540,7 +547,6 @@ sub printResults(%) {
 	} else {
 		foreach $isbn (sort myHashSort keys %data) {
 			printShortBookDetails($data{$isbn});
-			#printf ("%s %7s %s - %s\n", $isbn, $data{$isbn}{price}, $data{$isbn}{title}, $data{$isbn}{authors});	
 		}
 	}
 }
@@ -584,16 +590,22 @@ sub checkValidPassword($) {
 #also check it contains only letters and numbers
 sub checkValidUsername($) {
 	my $username = shift;
-	chomp $username;
-	if ($username =~ m/[^A-Za-z0-9]/) {
-		print "Invalid login '$username': logins must start with a letter and contain only letters and digits.\n";
-		return 0;
-	} elsif (length($username) < 3 || length($username) > 8) {
+	if ($username eq "") {
 		print "Invalid login: logins must be 3-8 characters long.\n";
 		return 0;
 	} else {
-		return 1;
+		chomp $username;
+		if ($username =~ m/[^A-Za-z0-9]/) {
+			print "Invalid login '$username': logins must start with a letter and contain only letters and digits.\n";
+			return 0;
+		} elsif (length($username) < 3 || length($username) > 8) {
+			print "Invalid login: logins must be 3-8 characters long.\n";
+			return 0;
+		} else {
+			return 1;
+		}
 	}
+	
 }
 
 #checks that an ISBN is a 10 digit string with numbers and X's only
@@ -642,11 +654,20 @@ sub checkExpiry($) {
 #takes a boolean to supress printing
 sub checkEmptyBasket($) {
 	my $quite = shift;
-	if (scalar @basket == 0) {
+	if (!(-e "./baskets/$currentUser")) {
 		print "Your shopping basket is empty.\n" unless $quite;
 		return 0;
 	}
 	return 1;
 }
 
+#takes a book to supress printing
+sub checkLoggedIn($) {
+	my $quite = shift;
+	if (!$currentUser) {
+		print "Not logged in.\n" unless $quite;
+		return 0;
+	}
+	return 1;
+}
 
