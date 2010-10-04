@@ -123,6 +123,7 @@ sub quitProgram() {
 
 sub showShippingDetails() {
 	open (USER, "./users/$currentUser") or die "Cannot open user file for $currentUser";
+	print "Shipping Details:\n";
 	foreach $line (<USER>) {
 		if ($line =~ m/street=(.*)$/) {
 			$street = $1;
@@ -137,11 +138,11 @@ sub showShippingDetails() {
 		}
 	}
 	close(USER);
-	print $name;
-	print $street;
-	print $city;
+	print "$name\n";
+	print "$street\n";
+	print "$city\n";
 	chomp $state;
-	print "$state, $postcode";
+	print "$state, $postcode\n";
 }
 
 sub viewOrders() {
@@ -193,13 +194,30 @@ sub checkout() {
 		showBasket();
 		print "\n";
 		print "Credit Card Number: ";
-		while (!validateCreditCard($cardNo = <STDIN>)) {
-			print "\nCredit Card Number: ";	
+		$valid = 0;
+		while (!$valid) {
+			$cardNo = <STDIN>;
+			chomp $cardNo;
+			if ($cardNo) {
+				$valid = validateCreditCard($cardNo);
+			}
+			if (!$valid) {
+				print "Credit Card Number: ";
+			}
+			
 		}
 		chomp $cardNo;
 		print "Expiry date (mm/yy): ";
-		while (!checkExpiry($expiry = <STDIN>)) {
-			print "\nExpiry date (mm/yy): ";
+		$valid = 0;
+		while (!$valid) {
+			$expiry = <STDIN>;
+			chomp $expiry;
+			if ($expiry) {
+				$valid = checkExpiry($expiry);
+			}
+			if (!$valid) {
+				print "Expiry date (mm/yy): ";	
+			}
 		}
 		chomp $expiry;
 		#get the next order number
@@ -219,7 +237,7 @@ sub checkout() {
 		open (BASKET, "./baskets/$currentUser") or die "Cannot open basket for $currentUser";
 		foreach $isbn (<BASKET>) {
 			if ($isbn ne "") {
-				print ORDER_FILE "$isbn\n";
+				print ORDER_FILE "$isbn";
 			}
 		}
 		close (BASKET);
@@ -630,11 +648,11 @@ sub validateCreditCard($) {
 	chomp $cardNo;
 	if (length($cardNo) == 16) {
 		if ($cardNo !~ m/[0-9]{16}/) {
-			print "Invalid credit card number - must be 16 digits.\n";
+			print "Invalid credit card number - must be 16 digits.\n\n";
 			return 0;
 		}
 	} else {
-		print "Invalid credit card number - must be 16 digits.\n";
+		print "Invalid credit card number - must be 16 digits.\n\n";
 		return 0;
 	}
 	return 1;
@@ -645,7 +663,7 @@ sub checkExpiry($) {
 	my $expiry = shift;
 	chomp $expiry;
 	if ($expiry !~ m/[0-9]{2}\/[0-9]{2}/) {
-		print "Invalid expiry date - must be mm/yy, e.g. 11/04.\n";
+		print "Invalid expiry date - must be mm/yy, e.g. 11/04.\n\n";
 		return 0;
 	}
 	return 1;
